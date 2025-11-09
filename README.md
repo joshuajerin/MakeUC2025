@@ -1,23 +1,34 @@
-# EmpathLens – Distress Helper
+# EmpathLens – AI Social Companion for Meta Ray-Ban Glasses
 
-**A local provider service for Meta Glasses API that guides wearers through distress episodes using AI-powered micro-interventions.**
+**Your personal AI therapist and conversation coach, right in your glasses.**
 
-⚠️ **DISCLAIMER**: This is NOT a medical device. This tool provides brief distress management techniques and is not a substitute for professional mental health care, emergency services, or medical advice.
+⚠️ **DISCLAIMER**: This is NOT a medical device. This tool provides distress management techniques and social conversation assistance but is not a substitute for professional mental health care, emergency services, or medical advice.
 
 ## Overview
 
-EmpathLens integrates with the [Meta Glasses API (Messenger browser extension)](https://github.com/dcrebbin/meta-glasses-api) to provide real-time, voice-based support during anxiety, panic, or overwhelming moments. The system:
+EmpathLens integrates with your Meta Ray-Ban Smart Glasses to provide two powerful features:
 
-- **Detects distress** from text messages (primary signal) with optional audio prosody analysis
-- **Generates empathetic coaching** using a local LLM (Ollama)
-- **Delivers interventions** via voice (ElevenLabs TTS) and text
-- **Adapts in real-time** based on user feedback (better/same/worse check-ins)
-- **Prioritizes safety** with crisis keyword detection and immediate escalation offers
-- **Runs locally** for maximum privacy (only TTS uses cloud API)
+### 1. Panic Attack & Distress Management
+Real-time, voice-based support during anxiety, panic, or overwhelming moments:
+- **Detects distress** from your voice messages
+- **Guides breathing exercises** with calming voice instructions
+- **Provides grounding techniques** to help you regain control
+- **Adapts in real-time** based on how you're feeling
+- **Escalates to crisis support** when needed
+
+### 2. Social Conversation Assistant (NEW!)
+For people who struggle with social cues or conversation anxiety:
+- **Analyzes facial expressions** of the person you're talking to
+- **Understands emotional context** from their face and words
+- **Suggests what to say back** in real-time
+- **Provides alternative responses** so you can choose what feels right
+- **Explains social cues** to help you understand what they might be feeling
+
+Perfect for people with social anxiety, autism spectrum, or anyone who wants support navigating conversations.
 
 ## Core Features
 
-### State-Based Interventions
+### Distress Management States
 
 | State | Intervention | Duration | Example |
 |-------|-------------|----------|---------|
@@ -27,22 +38,32 @@ EmpathLens integrates with the [Meta Glasses API (Messenger browser extension)](
 | **RECOVERY** | Reinforcement | — | "Your body is settling. Two slow breaths." |
 | **CRISIS_RISK** | Escalation offer | — | "Can I contact your support person?" |
 
+### Conversation Assistant Features
+
+- **Facial emotion detection**: Analyzes happiness, sadness, anger, surprise, confusion, interest, etc.
+- **Context-aware suggestions**: Considers what they said AND their facial expression
+- **Multiple response options**: Get 2-3 alternatives to choose from
+- **Tone guidance**: Tells you the recommended tone (friendly, empathetic, casual, etc.)
+- **Social cue interpretation**: Explains what they might be feeling or wanting
+- **Voice playback**: Hear the suggested response via ElevenLabs TTS
+
 ### Safety Guardrails
 
 - ✅ Crisis keyword detection (self-harm, suicide ideation) triggers immediate escalation
-- ✅ Post-LLM filtering: max 18 words, no medical claims, safe replacements
+- ✅ Post-AI filtering: concise responses, no medical claims
 - ✅ "Stop" command immediately ends intervention
 - ✅ Escalation after 2 minutes of persistent distress
 - ✅ No raw audio/video storage
+- ✅ Runs locally with Gemini API
 
 ## Architecture
 
 ```
-User (Meta Glasses) 
-    ↓ (voice/text message)
+User (Meta Glasses)
+    ↓ (voice/text + optional face image)
 Messenger Browser Extension
     ↓ (HTTP POST)
-EmpathLens Provider (FastAPI) ←→ Ollama (local LLM)
+EmpathLens Provider (FastAPI) ←→ Google Gemini AI
     ↓                              ↓
 ElevenLabs TTS ←→ Virtual Audio Device → Messenger Call
 ```
@@ -54,8 +75,8 @@ ElevenLabs TTS ←→ Virtual Audio Device → Messenger Call
 - Computer running macOS/Linux/Windows
 
 ### Software
-1. **Ollama** - Local LLM runtime
-2. **Python 3.9+**
+1. **Python 3.9+**
+2. **Google Gemini API key** (free tier available)
 3. **Meta Glasses API** - Messenger browser extension
 4. **ElevenLabs API key** (optional, for voice output)
 5. **Virtual audio device** (optional, for routing TTS into calls)
@@ -65,22 +86,19 @@ ElevenLabs TTS ←→ Virtual Audio Device → Messenger Call
 
 ## Installation
 
-### 1. Install Ollama
+### 1. Get API Keys
 
-#### macOS/Linux:
-```bash
-curl -fsSL https://ollama.com/install.sh | sh
-```
+#### Google Gemini API (Required)
+1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Click "Create API Key"
+3. Copy your API key
 
-#### Windows:
-Download from [ollama.com](https://ollama.com)
+#### ElevenLabs API (Optional, for voice)
+1. Sign up at [elevenlabs.io](https://elevenlabs.io)
+2. Go to Profile → API Keys
+3. Copy your API key
 
-#### Pull the model:
-```bash
-ollama pull llama3
-```
-
-### 2. Set Up EmpathLens Provider
+### 2. Set Up EmpathLens
 
 ```bash
 # Clone or navigate to project directory
@@ -93,21 +111,14 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Configure environment
-cp .env.example .env
-```
+# Create environment file
+cat > .env << EOF
+# Gemini Configuration (Required)
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.0-flash-exp
 
-### 3. Configure Environment Variables
-
-Edit `.env` with your settings:
-
-```bash
-# Ollama (required)
-OLLAMA_URL=http://localhost:11434
-OLLAMA_MODEL=llama3
-
-# ElevenLabs (optional, for voice)
-ELEVEN_API_KEY=your_api_key_here
+# ElevenLabs (Optional, for voice)
+ELEVEN_API_KEY=your_elevenlabs_key_here
 ELEVEN_VOICE_ID=21m00Tcm4TlvDq8ikWAM
 
 # Detection weights
@@ -115,29 +126,26 @@ TEXT_WEIGHT=0.6
 AUDIO_WEIGHT=0.4
 
 # Features
-ENABLE_AUDIO=false  # Set to true for audio prosody analysis
+ENABLE_AUDIO=false
 
 # Server
 HOST=0.0.0.0
 PORT=8000
+EOF
 ```
 
-**Get ElevenLabs API Key:**
-1. Sign up at [elevenlabs.io](https://elevenlabs.io)
-2. Go to Profile → API Keys
-3. Copy your API key
-
-### 4. Set Up Meta Glasses API Extension
+### 3. Set Up Meta Glasses API Extension
 
 Follow the setup instructions at [github.com/dcrebbin/meta-glasses-api](https://github.com/dcrebbin/meta-glasses-api):
 
 1. Install the browser extension
 2. Create a Messenger group chat with your alt account
 3. Configure the extension to use EmpathLens as a custom provider:
-   - Provider URL: `http://localhost:8000/distress/infer`
-   - Check-in URL: `http://localhost:8000/distress/checkin`
+   - **Distress helper URL**: `http://localhost:8000/distress/infer`
+   - **Check-in URL**: `http://localhost:8000/distress/checkin`
+   - **Conversation assistant URL**: `http://localhost:8000/conversation/assist`
 
-### 5. (Optional) Set Up Virtual Audio Routing
+### 4. (Optional) Set Up Virtual Audio Routing
 
 To route TTS audio into Messenger calls:
 
@@ -159,25 +167,20 @@ brew install blackhole-2ch
 ### Starting the Service
 
 ```bash
-# Activate virtual environment
+# Easy way: Use the start script
+./scripts/start.sh
+
+# Or manually:
 source venv/bin/activate
-
-# Start Ollama (in separate terminal)
-ollama serve
-
-# Start EmpathLens provider
-python main.py
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 The service will start on `http://localhost:8000`.
 
 ### Testing the API
 
+#### Test Distress Detection
 ```bash
-# Health check
-curl http://localhost:8000/health
-
-# Test distress detection
 curl -X POST http://localhost:8000/distress/infer \
   -H "Content-Type: application/json" \
   -d '{
@@ -186,41 +189,42 @@ curl -X POST http://localhost:8000/distress/infer \
   }'
 ```
 
+#### Test Conversation Assistant
+```bash
+curl -X POST http://localhost:8000/conversation/assist \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chat_id": "test_123",
+    "other_person_said": "Hey, how are you doing today?",
+    "conversation_context": "Casual greeting from a friend"
+  }'
+```
+
+#### Health Check
+```bash
+curl http://localhost:8000/health
+```
+
 ### Using with Meta Glasses
 
-1. **Join a Messenger call** with your alt account (or text the group chat)
-2. **Say or type**: "I'm having a panic attack"
-3. **Listen/read** the response (arrives in ~2 seconds)
+#### Distress Management Mode
+1. **Join a Messenger call** or send a message
+2. **Say**: "I'm having a panic attack"
+3. **Listen** to the breathing guidance (arrives in ~2 seconds)
 4. **Follow the breathing cue** for ~45-60 seconds
 5. **Respond** with "better", "same", or "worse" when prompted
 6. **System adapts** based on your response
 
+#### Conversation Assistant Mode
+1. **Join a Messenger call** with someone
+2. The glasses capture the other person's face and what they say
+3. **You receive** real-time suggestions on what to say back
+4. **Choose** from the suggested responses or alternatives
+5. **Speak naturally** using the guidance
+
 ### Stop Command
 
-Say or type **"stop"** at any time to end the intervention immediately.
-
-## Demo Script (60-90 seconds)
-
-### Scenario 1: Panic Attack
-1. **User**: "I can't breathe, I'm losing control"
-2. **System**: "In for four, hold seven, out for eight." *(spoken + text)*
-3. *(Wait ~45 seconds)*
-4. **System**: "How are you feeling now?" *(buttons: better/same/worse)*
-5. **User**: Clicks "better"
-6. **System**: "Your body is settling. Take two slow breaths."
-
-### Scenario 2: Overwhelmed
-1. **User**: "It's too much, I'm shutting down"
-2. **System**: "Name five things you can see."
-3. **User**: Lists items
-4. **System**: "Name four things you can touch."
-5. *(Continues grounding sequence)*
-6. **System**: "You're here. You're present. Take a slow breath."
-
-### Scenario 3: Crisis Keywords
-1. **User**: "I don't want to live anymore"
-2. **System**: "I hear you're struggling. Would you like me to contact your support person?" *(immediate, no coaching)*
-3. *(Buttons: contact_support / continue_alone)*
+Say or type **"stop"** at any time to end any intervention immediately.
 
 ## API Reference
 
@@ -256,6 +260,42 @@ Main endpoint for distress detection and intervention.
 }
 ```
 
+### POST `/conversation/assist`
+
+Conversation assistant endpoint for social interaction help.
+
+**Request:**
+```json
+{
+  "chat_id": "unique_chat_id",
+  "other_person_said": "That's really interesting! Tell me more.",
+  "frame_url": "optional_image_url",
+  "frame_base64": "optional_base64_image",
+  "conversation_context": "Discussing my hobby"
+}
+```
+
+**Response:**
+```json
+{
+  "suggested_response": "Well, I've been really into photography for about a year now, especially landscape shots.",
+  "alternative_responses": [
+    "I'd love to share more about it! What would you like to know?",
+    "It's something I'm passionate about. I could show you some examples if you'd like."
+  ],
+  "emotion_analysis": {
+    "primary_emotion": "interested",
+    "confidence": 0.85,
+    "secondary_emotions": ["happy", "engaged"],
+    "facial_cues": "slight smile, raised eyebrows"
+  },
+  "tone_guidance": "enthusiastic but not overwhelming",
+  "social_cues": "They seem genuinely interested and want to hear more details. Their raised eyebrows and smile indicate positive engagement.",
+  "audio_url": "/tmp/empathlens_audio/conversation_123.mp3",
+  "confidence": 0.85
+}
+```
+
 ### POST `/distress/checkin`
 
 Handle follow-up check-ins.
@@ -264,12 +304,10 @@ Handle follow-up check-ins.
 ```json
 {
   "chat_id": "unique_chat_id",
-  "response": "better",  // "better" | "same" | "worse"
+  "response": "better",
   "timestamp": "2025-11-08T12:01:00Z"
 }
 ```
-
-**Response:** Same format as `/distress/infer`
 
 ### POST `/distress/stop`
 
@@ -278,14 +316,6 @@ Stop intervention for a conversation.
 **Request:**
 ```bash
 ?chat_id=unique_chat_id
-```
-
-**Response:**
-```json
-{
-  "status": "stopped",
-  "chat_id": "unique_chat_id"
-}
 ```
 
 ### GET `/health`
@@ -299,7 +329,10 @@ Service health check.
   "components": {
     "detector": "operational",
     "state_machine": "operational",
-    "ollama": "operational",
+    "llm": "operational",
+    "llm_provider": "gemini",
+    "facial_analyzer": "operational",
+    "conversation_coach": "operational",
     "tts": "operational"
   },
   "active_sessions": 3
@@ -312,8 +345,8 @@ Service health check.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OLLAMA_URL` | `http://localhost:11434` | Ollama API endpoint |
-| `OLLAMA_MODEL` | `llama3` | Model to use (llama3, mistral, etc.) |
+| `GEMINI_API_KEY` | `None` | Google Gemini API key (required) |
+| `GEMINI_MODEL` | `gemini-2.0-flash-exp` | Gemini model to use |
 | `ELEVEN_API_KEY` | `None` | ElevenLabs API key (optional) |
 | `ELEVEN_VOICE_ID` | `21m00Tcm4TlvDq8ikWAM` | Voice ID for TTS |
 | `TEXT_WEIGHT` | `0.6` | Weight for text-based detection |
@@ -327,26 +360,27 @@ Service health check.
 - **Session timeout**: 30 minutes of inactivity
 - **Intervention cooldown**: 30 seconds between interventions
 - **Escalation timeout**: 120 seconds of persistent distress
-- **Max response words**: 18 words per LLM output
+- **Max response words**: 18 words per response (distress mode)
 
 ## Troubleshooting
 
-### "Connection refused" when calling API
-- Ensure Ollama is running: `ollama serve`
-- Check Ollama URL: `curl http://localhost:11434/api/tags`
+### "Gemini API key not set"
+- Ensure you've added your API key to `.env`
+- Get a free key at [Google AI Studio](https://makersuite.google.com/app/apikey)
 
 ### No voice output
 - Check ElevenLabs API key is set correctly
 - Verify API key is valid: [elevenlabs.io/app](https://elevenlabs.io/app)
 - Service falls back to text-only if TTS unavailable
 
-### LLM responses are slow
-- Use a smaller model: `ollama pull llama3:8b`
-- Reduce `max_tokens` in `ollama_client.py`
+### Facial analysis not working
+- Ensure image is provided as `frame_url` or `frame_base64`
+- Check that Gemini API key has vision API access
+- Verify image format is supported (JPEG, PNG)
 
 ### Glasses not responding
 - Verify Messenger extension is monitoring the correct chat
-- Check provider URL in extension settings
+- Check provider URLs in extension settings
 - Test API directly with curl first
 
 ### State machine too sensitive
@@ -360,11 +394,13 @@ Service health check.
 - ✅ No raw audio or video
 - ✅ No message history (processed then discarded)
 - ✅ Temporary audio files (auto-cleaned after 1 hour)
+- ✅ No facial images stored (analyzed then deleted)
 
 ### What's Shared
-- ❌ Nothing leaves your machine except TTS API calls (optional)
+- ❌ Text and images sent to Google Gemini API for processing
+- ❌ Generated responses sent to ElevenLabs for TTS (optional)
 - ❌ No analytics, telemetry, or third-party tracking
-- ❌ No message content sent to ElevenLabs (only generated responses)
+- ❌ All processing happens via API calls, no local data retention
 
 ### Consent
 - User must explicitly enable the extension and join monitored chats
@@ -377,59 +413,110 @@ Service health check.
 
 ```
 MakeUC2025/
-├── main.py              # FastAPI server & endpoints
-├── config.py            # Configuration management
-├── models.py            # Pydantic data models
-├── detector.py          # Text & audio distress detection
-├── state_machine.py     # State transitions & logic
-├── interventions.py     # Intervention mapping & sequences
-├── ollama_client.py     # Ollama LLM integration
-├── tts_client.py        # ElevenLabs TTS integration
-├── session_manager.py   # Session state tracking
-├── safety.py            # Post-LLM safety filters
-├── requirements.txt     # Python dependencies
-├── .env.example         # Environment template
-└── README.md            # This file
+├── README.md                   # User documentation
+├── QUICKSTART.md              # 5-minute setup guide
+├── CLAUDE.md                  # Developer guide for AI assistants
+├── requirements.txt           # Python dependencies
+├── .env.example               # Environment template
+├── app/
+│   ├── __init__.py
+│   ├── main.py                # FastAPI server & endpoints
+│   ├── config.py              # Configuration management
+│   ├── models.py              # Pydantic data models
+│   ├── core/                  # Core business logic
+│   │   ├── detector.py        # Distress detection
+│   │   ├── state_machine.py   # State transitions
+│   │   ├── interventions.py   # Intervention strategies
+│   │   ├── session_manager.py # Session tracking
+│   │   └── safety.py          # Safety filters
+│   └── services/              # External integrations
+│       ├── gemini_client.py   # Gemini LLM
+│       ├── conversation_assistant.py  # Facial analysis
+│       └── tts_client.py      # ElevenLabs TTS
+├── tests/                     # Test suite
+│   ├── test_service.py
+│   └── simple_test.py
+├── scripts/                   # Utility scripts
+│   └── start.sh
+└── docs/                      # Additional documentation
+    ├── CONTRIBUTING.md
+    ├── DEMO_SCRIPT.md
+    └── TEST_INSTRUCTIONS.md
 ```
 
 ### Running Tests
 
 ```bash
-# Run with increased logging
-LOG_LEVEL=DEBUG python main.py
+# Run comprehensive test suite
+python tests/test_service.py
 
-# Test individual components
-python -c "from detector import TextDistressDetector; d = TextDistressDetector(); print(d.detect('I am having a panic attack'))"
+# Run simple test
+python tests/simple_test.py
+
+# Test with increased logging
+LOG_LEVEL=DEBUG python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 ### Extending the System
 
 #### Add a new intervention:
-1. Update `models.py`: Add `InterventionType`
-2. Update `interventions.py`: Map state → intervention
-3. Update `ollama_client.py`: Add prompt guidance
+1. Update `app/models.py`: Add `InterventionType`
+2. Update `app/core/interventions.py`: Map state → intervention
+3. Update `app/services/gemini_client.py`: Add prompt guidance
 
 #### Add new crisis keywords:
-1. Edit `detector.py`: Add patterns to `CRISIS_KEYWORDS`
+1. Edit `app/core/detector.py`: Add patterns to `CRISIS_KEYWORDS`
 
 #### Change detection thresholds:
-1. Edit `state_machine.py`: Adjust `THRESHOLDS` dict
+1. Edit `app/core/state_machine.py`: Adjust `THRESHOLDS` dict
+
+#### Customize conversation suggestions:
+1. Edit `app/services/conversation_assistant.py`: Modify prompts in `ConversationCoach`
+
+## Use Cases
+
+### 1. Panic Attack Support
+**Scenario**: You're in public and feel a panic attack coming
+- Discreetly activate through your glasses
+- Get immediate breathing guidance
+- Follow along privately without drawing attention
+
+### 2. Social Anxiety at Events
+**Scenario**: You're at a networking event and someone approaches you
+- Glasses capture their face and what they say
+- Get real-time suggestions on how to respond
+- Choose responses that match your style
+
+### 3. Autism Spectrum Support
+**Scenario**: You struggle to read facial expressions
+- System analyzes their emotions for you
+- Explains what their facial cues mean
+- Suggests appropriate responses based on context
+
+### 4. Interview Preparation
+**Scenario**: You're nervous about conversations in interviews
+- Practice with the system analyzing interactions
+- Learn appropriate responses to questions
+- Build confidence in social situations
 
 ## Limitations & Future Work
 
 ### Current Limitations
-- Text-only detection by default (audio prosody is placeholder)
+- Requires internet for Gemini API
 - English language only
 - No persistent user profiles or learning
 - Single-user sessions (no group support)
+- Facial analysis requires clear face images
 
 ### Future Enhancements
 - [ ] Audio prosody analysis (pitch, pace, tremor)
 - [ ] Multi-language support
-- [ ] Adaptive thresholds based on user baseline
+- [ ] Adaptive learning from user preferences
 - [ ] Integration with wearables (heart rate, HRV)
-- [ ] Offline TTS option (e.g., Coqui TTS)
-- [ ] Session summaries and progress tracking
+- [ ] Offline mode with local models
+- [ ] Group conversation support
+- [ ] Real-time conversation tracking
+- [ ] Personalized response style learning
 
 ## License
 
@@ -438,7 +525,7 @@ MIT License - See LICENSE file for details.
 ## Acknowledgments
 
 - **Meta Glasses API** by [@dcrebbin](https://github.com/dcrebbin)
-- **Ollama** - [ollama.com](https://ollama.com)
+- **Google Gemini** - [ai.google.dev](https://ai.google.dev)
 - **ElevenLabs** - [elevenlabs.io](https://elevenlabs.io)
 - Therapeutic techniques inspired by CBT, DBT, and mindfulness practices
 
@@ -454,4 +541,3 @@ For issues, questions, or contributions:
 - 🇺🇸 **988 Suicide & Crisis Lifeline**: Call/text 988
 - 🇺🇸 **Crisis Text Line**: Text HOME to 741741
 - 🌍 **International**: [findahelpline.com](https://findahelpline.com)
-

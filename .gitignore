@@ -20,4 +20,5 @@ htmlcov/
 *.wav
 *.mp3
 audio_output/
+.env.example
 
