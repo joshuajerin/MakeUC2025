@@ -93,11 +93,24 @@ async def infer_distress(request: InferRequest):
             raise HTTPException(status_code=400, detail="Message cannot be empty")
         
         session = session_manager.get_or_create_session(chat_id)
-        
+
+        # Use ARM edge audio features if available (privacy-preserving)
+        audio_features = request.edge_audio_features if hasattr(request, 'edge_audio_features') else None
+
+        # If ARM edge already detected distress, incorporate that signal
+        edge_distress = request.edge_distress_level if hasattr(request, 'edge_distress_level') else None
+
         distress_prob, is_crisis, is_stop, detection_details = detector.detect(
             text=user_message,
-            audio_features=None
+            audio_features=audio_features
         )
+
+        # Fuse cloud and ARM edge distress signals if available
+        if edge_distress is not None:
+            # Weighted average: trust ARM edge signal (60%) + cloud signal (40%)
+            distress_prob = 0.6 * edge_distress + 0.4 * distress_prob
+            detection_details["edge_distress_level"] = edge_distress
+            detection_details["fusion"] = "arm_edge_cloud"
         
         if is_stop:
             session_manager.update_session(chat_id, stopped=True)
@@ -315,9 +328,18 @@ async def assist_conversation(request: ConversationAssistRequest):
         if not what_they_said:
             raise HTTPException(status_code=400, detail="Message cannot be empty")
 
-        # Analyze facial expression if image provided
+        # Use ARM edge facial emotion analysis if available (privacy-preserving)
         emotion_analysis = None
-        if request.frame_url or request.frame_base64:
+        if hasattr(request, 'edge_facial_emotion') and request.edge_facial_emotion:
+            # ARM edge already analyzed the face locally
+            emotion_analysis = EmotionAnalysis(
+                primary_emotion=request.edge_facial_emotion.get("primary_emotion", "neutral"),
+                confidence=request.edge_facial_emotion.get("confidence", 0.5),
+                secondary_emotions=None,
+                facial_cues=request.edge_facial_emotion.get("facial_cues")
+            )
+        elif request.frame_url or request.frame_base64:
+            # No ARM edge data - analyze in cloud
             emotion_analysis = await facial_analyzer.analyze_face(
                 image_url=request.frame_url,
                 image_base64=request.frame_base64

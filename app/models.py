@@ -39,6 +39,10 @@ class InferRequest(BaseModel):
     user_id: Optional[str] = Field(None, description="User identifier")
     timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
     frame_url: Optional[str] = Field(None, description="Optional image/video frame URL")
+    # ARM edge processing fields
+    edge_audio_features: Optional[dict] = Field(None, description="Pre-processed audio features from ARM edge")
+    edge_distress_level: Optional[float] = Field(None, description="Local distress probability from ARM")
+    privacy_filters: Optional[List[str]] = Field(None, description="Privacy filters applied by ARM edge")
 
 
 class CheckInRequest(BaseModel):
@@ -89,6 +93,9 @@ class ConversationAssistRequest(BaseModel):
     frame_base64: Optional[str] = Field(None, description="Base64 encoded image of the other person's face")
     conversation_context: Optional[str] = Field(None, description="Brief context about the conversation")
     timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    # ARM edge processing fields
+    edge_facial_emotion: Optional[dict] = Field(None, description="Pre-analyzed facial emotions from ARM edge")
+    privacy_filters: Optional[List[str]] = Field(None, description="Privacy filters applied by ARM edge")
 
 
 class EmotionAnalysis(BaseModel):
