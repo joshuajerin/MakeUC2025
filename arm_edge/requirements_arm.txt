@@ -1,0 +1,41 @@
+# ARM Edge Service Requirements
+# Optimized for ARM devices (Raspberry Pi, Jetson, etc.)
+
+# Core FastAPI
+fastapi==0.109.0
+uvicorn==0.27.0
+pydantic==2.5.3
+httpx==0.26.0
+python-multipart==0.0.6
+python-dotenv==1.0.0
+
+# ARM-Optimized ML Libraries
+# Use TFLite Runtime for smaller footprint on ARM
+tflite-runtime>=2.14.0  # Lightweight TFLite for ARM (vs full TensorFlow)
+# Alternative if tflite-runtime not available:
+# tensorflow>=2.14.0
+
+# Computer Vision (with ARM NEON optimizations)
+opencv-python-headless==4.8.1.78  # Headless version (no GUI) for ARM
+Pillow==10.1.0
+
+# Audio Processing (uses ARM NEON automatically)
+numpy>=1.24.0  # NEON-optimized on ARM
+scipy>=1.11.0  # FFT and signal processing with NEON
+
+# System Monitoring
+psutil==5.9.6
+
+# ARM NN Delegate (optional, for maximum performance)
+# Install separately based on device:
+# Raspberry Pi: pip install pyarmnn
+# Jetson: comes pre-installed with JetPack
+
+# Development Tools
+pytest==7.4.3
+pytest-asyncio==0.21.1
+
+# Notes:
+# - On Raspberry Pi 4+, install: sudo apt-get install libatlas-base-dev
+# - On Jetson, use NVIDIA's pre-built packages for best performance
+# - ARM NEON optimizations are automatically used by NumPy/SciPy when available
